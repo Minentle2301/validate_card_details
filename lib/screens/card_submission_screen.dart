@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/credit_card.dart';
 import '../models/banned_country.dart';
 import '../services/card_utils.dart';
@@ -92,8 +92,9 @@ class _CardSubmissionScreenState extends State<CardSubmissionScreen> {
     final country = _selectedCountry.trim();
     final cardType = CardUtils.inferCardType(cleanNumber);
 
-    // 1. Check Banned Country
-    final bannedNames = _bannedCountries.map((e) => e.name).toList();
+    // 1. Refresh banned list and check Banned Country
+    final refreshedBanned = await widget.storageService.loadBannedCountries();
+    final bannedNames = refreshedBanned.map((e) => e.name).toList();
     if (CardUtils.isCountryBanned(country, bannedNames)) {
       final msg = 'Submission blocked: "$country" is in the banned countries list!';
       _showSnack(msg, AppColors.dangerRed);
@@ -245,7 +246,9 @@ class _CardSubmissionScreenState extends State<CardSubmissionScreen> {
                           return 'Enter credit card number';
                         }
                         final clean = v.replaceAll(RegExp(r'\D'), '');
-                        if (clean.length < 12) return 'Card number too short';
+                        if (!CardUtils.isValidCardLength(clean, _inferredType)) {
+                          return 'Invalid card length for $_inferredType (too short or too long)';
+                        }
                         if (!CardUtils.luhnCheck(clean)) {
                           return 'Invalid card number (Luhn checksum failed)';
                         }
