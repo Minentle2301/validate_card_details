@@ -3,6 +3,7 @@ import '../models/credit_card.dart';
 import '../models/banned_country.dart';
 import '../services/card_utils.dart';
 import '../services/storage_service.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/credit_card_preview.dart';
 import '../widgets/country_picker.dart';
@@ -94,28 +95,25 @@ class _CardSubmissionScreenState extends State<CardSubmissionScreen> {
     // 1. Check Banned Country
     final bannedNames = _bannedCountries.map((e) => e.name).toList();
     if (CardUtils.isCountryBanned(country, bannedNames)) {
-      _showSnack(
-        'Submission blocked: "$country" is in the banned countries list!',
-        AppColors.dangerRed,
-      );
+      final msg = 'Submission blocked: "$country" is in the banned countries list!';
+      _showSnack(msg, AppColors.dangerRed);
+      NotificationService().showCardFailureNotification(reason: msg);
       return;
     }
 
     // 2. Check Luhn Algorithm Validation
     if (!CardUtils.luhnCheck(cleanNumber)) {
-      _showSnack(
-        'Validation failed: Invalid card checksum (Luhn check).',
-        AppColors.dangerRed,
-      );
+      const msg = 'Validation failed: Invalid card checksum (Luhn check).';
+      _showSnack(msg, AppColors.dangerRed);
+      NotificationService().showCardFailureNotification(reason: msg);
       return;
     }
 
     // 3. Check CVV Length
     if (!CardUtils.validateCVV(cvv, cardType)) {
-      _showSnack(
-        'Invalid CVV length for $cardType card.',
-        AppColors.dangerRed,
-      );
+      final msg = 'Invalid CVV length for $cardType card.';
+      _showSnack(msg, AppColors.dangerRed);
+      NotificationService().showCardFailureNotification(reason: msg);
       return;
     }
 
@@ -135,14 +133,18 @@ class _CardSubmissionScreenState extends State<CardSubmissionScreen> {
     setState(() => _isSubmitting = false);
 
     if (!added) {
-      _showSnack(
-        'Duplicate card: This credit card has already been captured!',
-        AppColors.warningOrange,
-      );
+      const msg = 'Duplicate card: This credit card has already been captured!';
+      _showSnack(msg, AppColors.warningOrange);
+      NotificationService().showCardFailureNotification(reason: msg);
       return;
     }
 
-    // Success reset
+    // Success push notification & reset
+    NotificationService().showCardSuccessNotification(
+      cardType: card.cardType,
+      last4Digits: card.last4Digits,
+    );
+
     _numberCtl.clear();
     _cvvCtl.clear();
     setState(() {

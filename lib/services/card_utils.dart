@@ -26,7 +26,9 @@ class CardUtils {
 
     // MasterCard: starts with 51-55 or 2221-2720
     if (RegExp(r'^5[1-5]').hasMatch(clean) ||
-        RegExp(r'^(222[1-9]|22[3-9]\d|2[3-6]\d{2}|27[01]\d|2720)').hasMatch(clean)) {
+        RegExp(
+          r'^(222[1-9]|22[3-9]\d|2[3-6]\d{2}|27[01]\d|2720)',
+        ).hasMatch(clean)) {
       return CardBrands.masterCard;
     }
 
@@ -62,6 +64,7 @@ class CardUtils {
   /// Returns true if the number is mathematically valid.
   static bool luhnCheck(String number) {
     final digits = number.replaceAll(RegExp(r'\D'), '');
+
     if (digits.length < 12) return false;
 
     int sum = 0;
@@ -69,14 +72,63 @@ class CardUtils {
 
     for (int i = 0; i < reversed.length; i++) {
       int digit = int.parse(reversed[i]);
+
       if (i % 2 == 1) {
         digit *= 2;
-        if (digit > 9) digit -= 9;
+
+        if (digit > 9) {
+          digit -= 9;
+        }
       }
+
       sum += digit;
     }
 
     return sum % 10 == 0;
+  }
+
+  /// Validates card number length based on brand specifications.
+  /// Returns true if the length matches allowed lengths for the given card type.
+  static bool isValidCardLength(String number, String cardType) {
+    final clean = number.replaceAll(RegExp(r'\D'), '');
+    final len = clean.length;
+
+    List<int> allowed;
+
+    switch (cardType) {
+      case CardBrands.visa:
+        allowed = [13, 16, 19];
+        break;
+
+      case CardBrands.masterCard:
+        allowed = [16];
+        break;
+
+      case CardBrands.americanExpress:
+        allowed = [15];
+        break;
+
+      case CardBrands.discover:
+        allowed = [16, 19];
+        break;
+
+      case CardBrands.jcb:
+        allowed = [16, 19];
+        break;
+
+      case CardBrands.dinersClub:
+        allowed = [14];
+        break;
+
+      case CardBrands.unionPay:
+        allowed = [16, 17, 18, 19];
+        break;
+
+      default:
+        allowed = [12, 13, 14, 15, 16, 17, 18, 19];
+    }
+
+    return allowed.contains(len);
   }
 
   /// Validates CVV length based on card brand.
